@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TheTiltedTrader Position Calculator</title>
+<style>
+:root{--bg:#07111E;--surface:#0D1B2A;--card:#16273E;--primary:#2563EB;--light:#60A5FA;--border:#233857;--text:#F8FAFC}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,sans-serif}
+.app{display:flex}.sidebar{width:220px;position:fixed;top:0;bottom:0;background:var(--surface);padding:20px}
+.content{margin-left:220px;padding:20px;width:100%}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}.metric{font-size:30px;color:var(--light);font-weight:700}
+input,select{width:100%;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:white}
+.inline{display:flex;align-items:center;gap:8px;margin-top:8px}.inline input{width:auto}button{width:100%;padding:12px;background:var(--primary);border:none;border-radius:8px;color:white;font-weight:700}
+@media(max-width:768px){.sidebar{display:none}.content{margin-left:0}}
+</style></head>
+<body>
+<div class="app">
+<aside class="sidebar"><h2>TheTiltedTrader</h2></aside>
+<main class="content">
+<h1>Futures Position Size Calculator</h1>
+<div class="grid">
+<div class="card"><h3>Current Equity Balance ($)</h3><input id="equity" type="number" value="30000"></div>
+<div class="card"><h3>Risk Per Trade (10%)</h3><input id="risk" type="number" disabled><div class="inline"><input id="override" type="checkbox"><label>Manual Override</label></div></div>
+<div class="card"><h3>Symbol</h3><select id="symbol"><option value="2" selected>MNQ ($2/pt)</option><option value="20">NQ ($20/pt)</option><option value="5">MES ($5/pt)</option><option value="50">ES ($50/pt)</option><option value="10">MGC ($10/pt)</option><option value="100">GC ($100/pt)</option></select></div>
+<div class="card"><h3>Stop Width (Points)</h3><input id="stop" type="number" value="25"></div>
+<div class="card"><h3>Risk : Reward (3:1)</h3><input id="rr" type="number" value="3" disabled><div class="inline"><input id="rrOverride" type="checkbox"><label>Manual Override</label></div></div>
+<div class="card"><h3>Take Profit Width (Points)</h3><div class="metric" id="tpw">75</div></div>
+</div>
+<div class="card" style="margin-top:16px"><button onclick="calc()">Calculate</button><h2 id="lots"></h2><p id="summary"></p></div>
+<div class="grid" style="margin-top:16px">
+<div class="card"><h3>Current Equity</h3><div class="metric" id="eq"></div></div>
+<div class="card"><h3>Actual Exposure %</h3><div class="metric" id="pct"></div></div>
+<div class="card"><h3>Losses Remaining</h3><div class="metric" id="loss"></div></div>
+</div>
+</main></div>
+<script>
+const equity=document.getElementById('equity');
+const risk=document.getElementById('risk');
+const override=document.getElementById('override');
+const rr=document.getElementById('rr');
+const rrOverride=document.getElementById('rrOverride');
+const symbol=document.getElementById('symbol');
+const stop=document.getElementById('stop');
+const tpw=document.getElementById('tpw');
+const lotsEl=document.getElementById('lots');
+const summary=document.getElementById('summary');
+const eqEl=document.getElementById('eq');
+const pctEl=document.getElementById('pct');
+const lossEl=document.getElementById('loss');
+
+function money(n){return n.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});}
+function sync(){
+ risk.disabled=!override.checked;
+ rr.disabled=!rrOverride.checked;
+ if(!override.checked) risk.value=Math.round((Number(equity.value)||0)*0.10);
+ if(!rrOverride.checked) rr.value=3;
+}
+function calc(){
+ sync();
+ const eq=Number(equity.value)||0;
+ const riskBudget=Number(risk.value)||0;
+ const pointValue=Number(symbol.value)||0;
+ const stopWidth=Number(stop.value)||0;
+ const rrValue=Number(rr.value)||3;
+ if(stopWidth<=0){return;}
+ const lots=Math.max(0,Math.floor(riskBudget/(pointValue*stopWidth)));
+ const exposure=lots*pointValue*stopWidth;
+ const takeProfitWidth=stopWidth*rrValue;
+ const estReward=lots*pointValue*takeProfitWidth;
+ tpw.textContent=takeProfitWidth.toFixed(2);
+ lotsEl.textContent=lots+' Contracts';
+ summary.textContent=`Risk Budget: ${money(riskBudget)} | Actual Exposure: ${money(exposure)} | Estimated Reward: ${money(estReward)}`;
+ eqEl.textContent=money(eq);
+ pctEl.textContent=(eq?((exposure/eq)*100):0).toFixed(2)+'%';
+ lossEl.textContent=exposure>0?Math.floor(eq/exposure):'∞';
+}
+[equity,risk,symbol,stop,rr].forEach(el=>el.addEventListener('input',calc));
+override.addEventListener('change',calc);
+rrOverride.addEventListener('change',calc);
+calc();
+</script>
+</body></html>
