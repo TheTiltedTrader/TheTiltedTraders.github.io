@@ -70,6 +70,9 @@ python3 nq_analysis.py --symbol MNQ=F --timeframes 1h,15m,5m --target-points 80 
 
 # Save a shareable Markdown report and raw JSON
 python3 nq_analysis.py --md-out report.md --json-out report.json
+
+# Dump full OHLCV + indicator history (all bars, not just the latest) to CSV
+python3 export_csv.py NQ=F nq_full_data.csv
 ```
 
 ### Options
